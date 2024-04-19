@@ -4,7 +4,10 @@
       <div class="q-mb-xl">
         <q-input v-model="tempData.name" label="姓名" />
         <q-input v-model="tempData.age" label="年齡" />
-        <q-btn color="primary" class="q-mt-md">新增</q-btn>
+        <q-btn color="primary" class="q-mt-md" @click="addData">
+          {{ isNew ? '新增' : '更新' }}
+        </q-btn>
+        <q-btn v-if="!isNew" color="secondary" class="q-mt-md q-ml-md" @click="isNew = true; resetForm();">取消</q-btn>
       </div>
 
       <q-table
@@ -39,7 +42,7 @@
             </q-td>
             <q-td class="text-right" auto-width v-if="tableButtons.length > 0">
               <q-btn
-                @click="handleClickOption(btn, props.row)"
+                @click="handleClickOption(btn, props.row, props.rowIndex)"
                 v-for="(btn, index) in tableButtons"
                 :key="index"
                 size="sm"
@@ -79,13 +82,16 @@
 
 <script setup lang="ts">
 import axios from 'axios';
-import { QTableProps } from 'quasar';
+import { QTableProps, useQuasar } from 'quasar';
 import { ref } from 'vue';
+
 interface btnType {
   label: string;
   icon: string;
   status: string;
 }
+const $q = useQuasar();
+const isNew = ref(true);
 const blockData = ref([
   {
     name: 'test',
@@ -123,8 +129,54 @@ const tempData = ref({
   name: '',
   age: '',
 });
-function handleClickOption(btn, data) {
-  // ...
+
+// axios.get('https://demo.mercuryfire.com.tw:49110/crudTest/a')
+//   .then(res => {
+//     console.log(res)
+//     this.blockData = res
+//   })
+
+function resetForm() {
+  tempData.value = { name: '', age: '' }
+}
+
+function addData() {
+  let { name, age } = tempData.value;
+  name = name.trim()
+  age = age.trim()
+  let flag = true, errArr = [];
+
+  if (name === '') {
+    flag = false;
+    errArr.push('姓名不得空白！')
+  }
+  if (age === '') {
+    flag = false;
+    errArr.push('年齡不得空白！')
+  }
+  if (isNaN(Number(age)) || Number(age) < 0) {
+    flag = false;
+    errArr.push('年齡請輸入正整數！')
+  }
+  if (!flag) {
+    return alert(errArr.join('\n'))
+  }
+  blockData.value.push({ ...tempData.value });
+  isNew.value = true
+  resetForm()
+}
+function handleClickOption(btn, data, index) {
+  switch (btn.status) {
+    case 'edit':
+      isNew.value = false;
+      tempData.value.name = data.name;
+      tempData.value.age = data.age;
+      break
+    case 'delete':
+      blockData.value.splice(index, 1)
+      break
+  }
+
 }
 </script>
 
